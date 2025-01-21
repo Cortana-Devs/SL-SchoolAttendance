@@ -1,0 +1,38 @@
+{
+  "rules": {
+    "users": {
+      "$uid": {
+        ".read": "auth != null",
+        ".write": "(auth != null && !data.exists()) || (auth != null && auth.uid === $uid) || (auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin')"
+      },
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "students": {
+      ".read": "auth != null",
+      ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'teacher')",
+      ".indexOn": ["grade", "name", "class"]
+    },
+    "attendance": {
+      "$date": {
+        "$classId": {
+          ".read": "auth != null",
+          ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'teacher')",
+          "records": {
+            "$studentId": {
+              ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'teacher')",
+              ".validate": "newData.hasChildren(['present', 'timestamp', 'markedBy', 'markedTime'])"
+            }
+          },
+          "id": { ".validate": "newData.isString()" },
+          "date": { ".validate": "newData.isString()" },
+          "class": { ".validate": "newData.isString()" },
+          "grade": { ".validate": "newData.isString()" },
+          "lastModified": { ".validate": "newData.isNumber()" },
+          "totalPresent": { ".validate": "newData.isNumber()" },
+          "totalAbsent": { ".validate": "newData.isNumber()" }
+        }
+      }
+    }
+  }
+} 
