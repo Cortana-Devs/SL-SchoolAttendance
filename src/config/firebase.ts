@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getDatabase } from 'firebase/database';
+import { Auth, getAuth } from 'firebase/auth';
+import { Database, getDatabase } from 'firebase/database';
 
 // Validate environment variables
 const requiredEnvVars = [
@@ -36,8 +36,8 @@ const firebaseConfig = {
 
 // Initialize Firebase with error handling
 let app;
-let auth;
-let database;
+let auth : Auth;
+let database: Database;
 
 try {
   app = initializeApp(firebaseConfig);
