@@ -6,46 +6,49 @@
   "outputDirectory": "dist",
   "routes": [
     {
-      "src": "/assets/(.*)",
+      "src": "^/assets/(.*)",
+      "dest": "/assets/$1",
       "headers": {
-        "cache-control": "public, max-age=31536000, immutable",
-        "content-type": "application/javascript"
-      },
-      "continue": true
+        "cache-control": "public, max-age=31536000, immutable"
+      }
     },
     {
-      "handle": "filesystem"
+      "src": "^/(?!assets/)(.*)\\.(?:js|css|svg|ico)$",
+      "dest": "/$1"
     },
     {
       "src": "/(.*)",
-      "dest": "/index.html"
+      "dest": "/index.html",
+      "headers": {
+        "cache-control": "public, max-age=0, must-revalidate"
+      }
     }
   ],
   "headers": [
     {
-      "source": "/(.*)\\.js$",
+      "source": "/assets/(.*)\\.js$",
       "headers": [
         {
           "key": "Content-Type",
-          "value": "application/javascript"
+          "value": "application/javascript; charset=utf-8"
         }
       ]
     },
     {
-      "source": "/(.*)\\.mjs$",
+      "source": "/assets/(.*)\\.css$",
       "headers": [
         {
           "key": "Content-Type",
-          "value": "application/javascript"
+          "value": "text/css; charset=utf-8"
         }
       ]
     },
     {
-      "source": "/(.*)",
+      "source": "/assets/(.*)\\.svg$",
       "headers": [
         {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
+          "key": "Content-Type",
+          "value": "image/svg+xml; charset=utf-8"
         }
       ]
     }
