@@ -21,7 +21,7 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   table: {
-    display: 'table',
+    display: 'flex',
     width: '100%',
     borderStyle: 'solid',
     borderWidth: 1,

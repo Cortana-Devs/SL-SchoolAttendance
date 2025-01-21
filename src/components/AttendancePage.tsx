@@ -12,13 +12,12 @@ import { AttendancePDF } from './AttendancePDF';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function AttendancePage() {
-  const { currentUser, userRole } = useAuth();
+  const { userRole } = useAuth();
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedClass, setSelectedClass] = useState('');
   const [selectedGrade, setSelectedGrade] = useState('');
   const [students, setStudents] = useState<Student[]>([]);
   const [attendance, setAttendance] = useState<AttendanceStatus[]>([]);
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -54,7 +53,6 @@ export default function AttendancePage() {
     setAttendance([]);
     setError('');
     setSuccess('');
-    setLoading(false);
     setSaving(false);
 
     // If we have both grade and class selected, load the data
@@ -98,7 +96,6 @@ export default function AttendancePage() {
     console.log('=== START loadStudents ===');
     console.log('Loading students for:', { selectedGrade, selectedClass });
     try {
-      setLoading(true);
       setError('');
       const data = await getStudentsByGrade(selectedGrade, selectedClass);
       console.log('Loaded students:', data);
@@ -120,7 +117,6 @@ export default function AttendancePage() {
       console.error('Failed to load students:', err);
       setError('Failed to load students');
     } finally {
-      setLoading(false);
       console.log('=== END loadStudents ===');
     }
   }

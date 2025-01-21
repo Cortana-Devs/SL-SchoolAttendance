@@ -499,7 +499,6 @@ export const getAttendanceStats = async (
 export const updateAttendanceRecord = async (
   date: string,
   classId: string,
-  grade: string,
   records: AttendanceStatus[]
 ): Promise<void> => {
   const attendanceRef = ref(database, `attendance/${date}/${classId}`);

@@ -7,7 +7,7 @@ export default function Layout() {
   const { currentUser, logout, userRole } = useAuth();
   const navigate = useNavigate();
 
-  const navigation = [
+  const menuItems = [
     { name: 'Dashboard', href: '/', icon: HomeIcon },
     { name: 'Mark Attendance', href: '/attendance', icon: ClipboardIcon },
     { name: 'Attendance Reports', href: '/reports', icon: ChartBarIcon },
