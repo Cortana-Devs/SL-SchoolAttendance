@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { HomeIcon, ClipboardIcon, ChartBarIcon, UsersIcon } from '@heroicons/react/24/outline';
 
 export default function Layout() {
-  const { currentUser, logout, userRole } = useAuth();
+  const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
 
   const menuItems = [
