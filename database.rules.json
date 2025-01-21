@@ -14,11 +14,17 @@
       ".indexOn": ["grade", "name", "class"]
     },
     "attendance": {
+      ".read": "auth != null",
+      ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'teacher')",
+      ".indexOn": ["date", "class", "grade"],
       "$date": {
+        ".read": "auth != null",
+        ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'teacher')",
         "$classId": {
           ".read": "auth != null",
           ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'teacher')",
           "records": {
+            ".read": "auth != null",
             "$studentId": {
               ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'teacher')",
               ".validate": "newData.hasChildren(['present', 'timestamp', 'markedBy', 'markedTime'])"
@@ -32,6 +38,16 @@
           "totalPresent": { ".validate": "newData.isNumber()" },
           "totalAbsent": { ".validate": "newData.isNumber()" }
         }
+      }
+    },
+    "stats": {
+      ".read": "auth != null",
+      ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'teacher')",
+      "daily": {
+        ".indexOn": ["date"]
+      },
+      "monthly": {
+        ".indexOn": ["year", "month"]
       }
     }
   }
