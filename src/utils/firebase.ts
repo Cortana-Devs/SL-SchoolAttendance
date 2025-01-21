@@ -4,6 +4,14 @@ import { Student, StudentFormData, AttendanceRecord, AttendanceStatus } from '..
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { auth } from '../config/firebase';
 
+const handleFirebaseError = (error: any, customMessage: string) => {
+  console.error(customMessage, error);
+  if (error.code === 'PERMISSION_DENIED') {
+    throw new Error('You do not have permission to perform this action. Please check your role and try again.');
+  }
+  throw error;
+};
+
 export const addStudent = async (data: StudentFormData): Promise<Student> => {
   const id = crypto.randomUUID();
   const timestamp = Date.now();
@@ -440,60 +448,86 @@ export const updateAttendanceStatus = async (
   });
 };
 
-// Add a function to get attendance statistics
 export const getAttendanceStats = async (
   startDate: string,
   endDate: string,
   grade?: string,
   classId?: string
 ) => {
-  const attendanceRef = ref(database, 'attendance');
-  const snapshot = await get(attendanceRef);
-  if (!snapshot.exists()) return null;
-
-  const stats = {
-    totalDays: 0,
-    totalPresent: 0,
-    totalAbsent: 0,
-    totalLate: 0,
-    totalExcused: 0,
-    averageAttendance: 0,
-    byDate: {} as Record<string, {
-      present: number;
-      absent: number;
-      late: number;
-      excused: number;
-    }>
-  };
-
-  const attendanceData = snapshot.val();
-  Object.entries(attendanceData).forEach(([date, classes]: [string, any]) => {
-    if (date >= startDate && date <= endDate) {
-      Object.entries(classes).forEach(([cls, data]: [string, any]) => {
-        if ((!grade || data.grade === grade) && (!classId || cls === classId)) {
-          stats.totalDays++;
-          stats.totalPresent += data.totalPresent || 0;
-          stats.totalAbsent += data.totalAbsent || 0;
-          stats.totalLate += data.totalLate || 0;
-          stats.totalExcused += data.totalExcused || 0;
-
-          stats.byDate[date] = {
-            present: (stats.byDate[date]?.present || 0) + (data.totalPresent || 0),
-            absent: (stats.byDate[date]?.absent || 0) + (data.totalAbsent || 0),
-            late: (stats.byDate[date]?.late || 0) + (data.totalLate || 0),
-            excused: (stats.byDate[date]?.excused || 0) + (data.totalExcused || 0)
-          };
-        }
-      });
+  try {
+    if (!auth.currentUser) {
+      throw new Error('You must be logged in to view statistics');
     }
-  });
 
-  const totalStudents = stats.totalPresent + stats.totalAbsent;
-  stats.averageAttendance = totalStudents > 0 
-    ? Math.round((stats.totalPresent / totalStudents) * 100) 
-    : 0;
+    const attendanceRef = ref(database, 'attendance');
+    const snapshot = await get(attendanceRef);
+    
+    if (!snapshot.exists()) {
+      return {
+        totalDays: 0,
+        totalPresent: 0,
+        totalAbsent: 0,
+        totalLate: 0,
+        totalExcused: 0,
+        averageAttendance: 0,
+        byDate: {}
+      };
+    }
 
-  return stats;
+    const stats = {
+      totalDays: 0,
+      totalPresent: 0,
+      totalAbsent: 0,
+      totalLate: 0,
+      totalExcused: 0,
+      averageAttendance: 0,
+      byDate: {} as Record<string, {
+        present: number;
+        absent: number;
+        late: number;
+        excused: number;
+      }>
+    };
+
+    const attendanceData = snapshot.val();
+    Object.entries(attendanceData).forEach(([date, classes]: [string, any]) => {
+      if (date >= startDate && date <= endDate) {
+        Object.entries(classes).forEach(([cls, data]: [string, any]) => {
+          if ((!grade || data.grade === grade) && (!classId || cls === classId)) {
+            stats.totalDays++;
+            stats.totalPresent += data.totalPresent || 0;
+            stats.totalAbsent += data.totalAbsent || 0;
+            stats.totalLate += data.totalLate || 0;
+            stats.totalExcused += data.totalExcused || 0;
+
+            stats.byDate[date] = {
+              present: (stats.byDate[date]?.present || 0) + (data.totalPresent || 0),
+              absent: (stats.byDate[date]?.absent || 0) + (data.totalAbsent || 0),
+              late: (stats.byDate[date]?.late || 0) + (data.totalLate || 0),
+              excused: (stats.byDate[date]?.excused || 0) + (data.totalExcused || 0)
+            };
+          }
+        });
+      }
+    });
+
+    const totalStudents = stats.totalPresent + stats.totalAbsent;
+    stats.averageAttendance = totalStudents > 0 
+      ? Math.round((stats.totalPresent / totalStudents) * 100) 
+      : 0;
+
+    // Cache the stats
+    const statsRef = ref(database, `stats/daily/${startDate}_${endDate}`);
+    await set(statsRef, {
+      ...stats,
+      timestamp: Date.now(),
+      generatedBy: auth.currentUser.email
+    });
+
+    return stats;
+  } catch (error) {
+    handleFirebaseError(error, 'Error fetching attendance statistics:');
+  }
 };
 
 export const updateAttendanceRecord = async (
