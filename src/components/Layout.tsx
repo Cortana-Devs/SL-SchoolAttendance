@@ -1,4 +1,3 @@
-import { ReactNode } from 'react';
 import { useNavigate, Link, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { HomeIcon, ClipboardIcon, ChartBarIcon, UsersIcon } from '@heroicons/react/24/outline';
@@ -39,28 +38,16 @@ export default function Layout() {
               
               {/* Desktop Navigation */}
               <div className="hidden md:ml-8 md:flex md:space-x-6">
-                <Link to="/" className="text-gray-600 hover:text-indigo-600 px-3 py-2 text-sm font-medium transition-colors">
-                  Dashboard
-                </Link>
-                {userRole === 'admin' ? (
-                  <>
-                    <Link to="/students" className="text-gray-600 hover:text-indigo-600 px-3 py-2 text-sm font-medium transition-colors">
-                      Students
-                    </Link>
-                    <Link to="/students/add" className="text-gray-600 hover:text-indigo-600 px-3 py-2 text-sm font-medium transition-colors">
-                      Add Student
-                    </Link>
-                  </>
-                ) : (
-                  <>
-                    <Link to="/attendance" className="text-gray-600 hover:text-indigo-600 px-3 py-2 text-sm font-medium transition-colors">
-                      Mark Attendance
-                    </Link>
-                    <Link to="/students" className="text-gray-600 hover:text-indigo-600 px-3 py-2 text-sm font-medium transition-colors">
-                      View Students
-                    </Link>
-                  </>
-                )}
+                {menuItems.map((item) => (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className="text-gray-600 hover:text-indigo-600 px-3 py-2 text-sm font-medium transition-colors flex items-center"
+                  >
+                    <item.icon className="h-5 w-5 mr-2" />
+                    {item.name}
+                  </Link>
+                ))}
               </div>
             </div>
 
@@ -102,24 +89,15 @@ export default function Layout() {
         {/* Mobile menu */}
         <div className="md:hidden border-t border-gray-200">
           <div className="space-y-1 px-4 py-3">
-            <Link
-              to="/dashboard"
-              className="block px-3 py-2 text-base font-medium text-gray-600 hover:text-indigo-600 hover:bg-gray-50 rounded-md transition-colors"
-            >
-              Dashboard
-            </Link>
-            <Link
-              to="/attendance"
-              className="block px-3 py-2 text-base font-medium text-gray-600 hover:text-indigo-600 hover:bg-gray-50 rounded-md transition-colors"
-            >
-              Attendance
-            </Link>
-            <Link
-              to="/reports"
-              className="block px-3 py-2 text-base font-medium text-gray-600 hover:text-indigo-600 hover:bg-gray-50 rounded-md transition-colors"
-            >
-              Reports
-            </Link>
+            {menuItems.map((item) => (
+              <Link
+                key={item.name}
+                to={item.href}
+                className="block px-3 py-2 text-base font-medium text-gray-600 hover:text-indigo-600 hover:bg-gray-50 rounded-md transition-colors"
+              >
+                {item.name}
+              </Link>
+            ))}
           </div>
           {currentUser && (
             <div className="border-t border-gray-200 px-4 py-4 space-y-4">
