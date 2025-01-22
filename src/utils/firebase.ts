@@ -459,19 +459,45 @@ export const getAttendanceStats = async (
       throw new Error('You must be logged in to view statistics');
     }
 
+    // First check user role
+    const userRole = await getUserRole(auth.currentUser.uid);
+    if (!userRole || (userRole !== 'admin' && userRole !== 'teacher')) {
+      throw new Error('You do not have permission to view statistics');
+    }
+
+    // Try to get cached stats first
+    const cacheKey = `stats_${startDate}_${endDate}_${grade || 'all'}_${classId || 'all'}`;
+    const cachedStats = await get(ref(database, `stats/cached/${cacheKey}`));
+    if (cachedStats.exists()) {
+      const cached = cachedStats.val();
+      if (Date.now() - cached.timestamp < 5 * 60 * 1000) { // 5 minutes cache
+        return cached.data;
+      }
+    }
+
     const attendanceRef = ref(database, 'attendance');
     const snapshot = await get(attendanceRef);
     
     if (!snapshot.exists()) {
-      return {
+      const emptyStats = {
         totalDays: 0,
         totalPresent: 0,
         totalAbsent: 0,
         totalLate: 0,
         totalExcused: 0,
         averageAttendance: 0,
-        byDate: {}
+        byDate: {},
+        generatedAt: Date.now(),
+        generatedBy: auth.currentUser.email
       };
+      
+      // Cache empty stats
+      await set(ref(database, `stats/cached/${cacheKey}`), {
+        data: emptyStats,
+        timestamp: Date.now()
+      });
+      
+      return emptyStats;
     }
 
     const stats = {
@@ -486,7 +512,9 @@ export const getAttendanceStats = async (
         absent: number;
         late: number;
         excused: number;
-      }>
+      }>,
+      generatedAt: Date.now(),
+      generatedBy: auth.currentUser.email
     };
 
     const attendanceData = snapshot.val();
@@ -517,16 +545,18 @@ export const getAttendanceStats = async (
       : 0;
 
     // Cache the stats
-    const statsRef = ref(database, `stats/daily/${startDate}_${endDate}`);
-    await set(statsRef, {
-      ...stats,
-      timestamp: Date.now(),
-      generatedBy: auth.currentUser.email
+    await set(ref(database, `stats/cached/${cacheKey}`), {
+      data: stats,
+      timestamp: Date.now()
     });
 
     return stats;
-  } catch (error) {
-    handleFirebaseError(error, 'Error fetching attendance statistics:');
+  } catch (error: any) {
+    console.error('Error fetching attendance statistics:', error);
+    if (error.code === 'PERMISSION_DENIED') {
+      throw new Error('You do not have permission to view statistics. Please check your role and try again.');
+    }
+    throw error;
   }
 };
 
