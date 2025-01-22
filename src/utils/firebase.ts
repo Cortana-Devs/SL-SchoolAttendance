@@ -4,27 +4,32 @@ import { Student, StudentFormData, AttendanceRecord, AttendanceStatus } from '..
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { auth } from '../config/firebase';
 
-const handleFirebaseError = (error: any, customMessage: string) => {
+// Helper function to handle Firebase errors with custom messages
+const handleError = (error: any, customMessage: string) => {
   console.error(customMessage, error);
   if (error.code === 'PERMISSION_DENIED') {
-    throw new Error('You do not have permission to perform this action. Please check your role and try again.');
+    return new Error('You do not have permission to perform this action. Please check your role and try again.');
   }
-  throw error;
+  return error;
 };
 
 export const addStudent = async (data: StudentFormData): Promise<Student> => {
-  const id = crypto.randomUUID();
-  const timestamp = Date.now();
-  
-  const student: Student = {
-    ...data,
-    id,
-    createdAt: timestamp,
-    updatedAt: timestamp,
-  };
+  try {
+    const id = crypto.randomUUID();
+    const timestamp = Date.now();
+    
+    const student: Student = {
+      ...data,
+      id,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    };
 
-  await set(ref(database, `students/${id}`), student);
-  return student;
+    await set(ref(database, `students/${id}`), student);
+    return student;
+  } catch (error) {
+    throw handleError(error, 'Error adding student:');
+  }
 };
 
 export const getStudents = async (): Promise<Student[]> => {
@@ -552,11 +557,7 @@ export const getAttendanceStats = async (
 
     return stats;
   } catch (error: any) {
-    console.error('Error fetching attendance statistics:', error);
-    if (error.code === 'PERMISSION_DENIED') {
-      throw new Error('You do not have permission to view statistics. Please check your role and try again.');
-    }
-    throw error;
+    throw handleError(error, 'Error fetching attendance statistics:');
   }
 };
 
