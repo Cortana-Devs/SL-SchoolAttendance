@@ -1,0 +1,376 @@
+{
+  "attendance": {
+    "2025-01-21": {
+      "A": {
+        "academicYear": "2025",
+        "class": "A",
+        "date": "2025-01-21",
+        "grade": "Grade 5",
+        "id": "2025-01-21_A",
+        "lastModified": 1737474422198,
+        "lastModifiedBy": "admin@attendancemarkin.com",
+        "period": "Morning",
+        "records": {
+          "student-017": {
+            "lastModifiedAt": 1737474422198,
+            "lastModifiedBy": "admin@attendancemarkin.com",
+            "markedBy": "admin@attendancemarkin.com",
+            "markedTime": "9:17:02 PM",
+            "note": "",
+            "present": true,
+            "timestamp": 1737474422198
+          },
+          "student-018": {
+            "lastModifiedAt": 1737474422198,
+            "lastModifiedBy": "admin@attendancemarkin.com",
+            "markedBy": "admin@attendancemarkin.com",
+            "markedTime": "9:17:02 PM",
+            "note": "",
+            "present": false,
+            "timestamp": 1737474422198
+          }
+        },
+        "schoolDayType": "Regular",
+        "section": "Primary",
+        "submitted": true,
+        "submittedBy": "admin@attendancemarkin.com",
+        "totalAbsent": 1,
+        "totalPresent": 1
+      },
+      "B": {
+        "class": "B",
+        "date": "2025-01-21",
+        "grade": "Grade 5",
+        "id": "2025-01-21_B",
+        "lastModified": 1737467293521,
+        "records": {
+          "student-017": {
+            "markedBy": "teacher@attendancemarkin.com",
+            "markedTime": "7:18:13 PM",
+            "present": true,
+            "timestamp": 1737467293521
+          },
+          "student-018": {
+            "markedBy": "teacher@attendancemarkin.com",
+            "markedTime": "7:18:13 PM",
+            "present": true,
+            "timestamp": 1737467293521
+          }
+        },
+        "totalAbsent": 0,
+        "totalPresent": 2
+      },
+      "C": {
+        "class": "C",
+        "date": "2025-01-21",
+        "grade": "Grade 4",
+        "id": "2025-01-21_C",
+        "lastModified": 1737456058392,
+        "records": {
+          "student-013": {
+            "present": true,
+            "timestamp": 1737456058392
+          },
+          "student-014": {
+            "present": true,
+            "timestamp": 1737456058392
+          },
+          "student-015": {
+            "present": true,
+            "timestamp": 1737456058392
+          },
+          "student-016": {
+            "present": true,
+            "timestamp": 1737456058392
+          }
+        },
+        "submitted": true
+      },
+      "D": {
+        "class": "D",
+        "date": "2025-01-21",
+        "grade": "Grade 5",
+        "id": "2025-01-21_D",
+        "lastModified": 1737455514894,
+        "records": {
+          "cad26e7f-4bce-4e70-a1fc-4e4af9d20af2": {
+            "present": true,
+            "timestamp": 1737455514894
+          }
+        },
+        "submitted": true
+      }
+    },
+    "2025-01-22": {
+      "A": {
+        "class": "A",
+        "date": "2025-01-22",
+        "grade": "Grade 5",
+        "id": "2025-01-22_A",
+        "lastModified": 1737547490131,
+        "records": {
+          "student-017": {
+            "markedBy": "teacher@attendancemarkin.com",
+            "markedTime": "5:34:50 PM",
+            "present": true,
+            "timestamp": 1737547490131
+          },
+          "student-018": {
+            "markedBy": "teacher@attendancemarkin.com",
+            "markedTime": "5:34:50 PM",
+            "present": true,
+            "timestamp": 1737547490131
+          }
+        },
+        "totalAbsent": 0,
+        "totalPresent": 2
+      }
+    }
+  },
+  "stats": {
+    "cached": {
+      "stats_2024-12-31_2025-01-30_all_all": {
+        "data": {
+          "averageAttendance": 83,
+          "byDate": {
+            "2025-01-21": {
+              "absent": 1,
+              "excused": 0,
+              "late": 0,
+              "present": 3
+            },
+            "2025-01-22": {
+              "absent": 0,
+              "excused": 0,
+              "late": 0,
+              "present": 2
+            }
+          },
+          "generatedAt": 1737547447102,
+          "generatedBy": "teacher@attendancemarkin.com",
+          "totalAbsent": 1,
+          "totalDays": 5,
+          "totalExcused": 0,
+          "totalLate": 0,
+          "totalPresent": 5
+        },
+        "timestamp": 1737547447102
+      },
+      "stats_2025-01-22_2025-01-22_all_all": {
+        "data": {
+          "averageAttendance": 50,
+          "byDate": {
+            "2025-01-22": {
+              "absent": 1,
+              "excused": 0,
+              "late": 0,
+              "present": 1
+            }
+          },
+          "generatedAt": 1737547366274,
+          "generatedBy": "teacher@attendancemarkin.com",
+          "totalAbsent": 1,
+          "totalDays": 1,
+          "totalExcused": 0,
+          "totalLate": 0,
+          "totalPresent": 1
+        },
+        "timestamp": 1737547366274
+      }
+    }
+  },
+  "students": {
+    "student-001": {
+      "class": "A",
+      "createdAt": 1737454252100,
+      "grade": "Grade 1",
+      "id": "student-001",
+      "name": "Kavinda Perera",
+      "registrationNumber": "20240001",
+      "updatedAt": 1737454252100
+    },
+    "student-002": {
+      "class": "A",
+      "createdAt": 1737454252101,
+      "grade": "Grade 1",
+      "id": "student-002",
+      "name": "Sachini Fernando",
+      "registrationNumber": "20240002",
+      "updatedAt": 1737454252101
+    },
+    "student-003": {
+      "class": "B",
+      "createdAt": 1737454252102,
+      "grade": "Grade 1",
+      "id": "student-003",
+      "name": "Malith Dissanayake",
+      "registrationNumber": "20240003",
+      "updatedAt": 1737454252102
+    },
+    "student-004": {
+      "class": "B",
+      "createdAt": 1737454252103,
+      "grade": "Grade 1",
+      "id": "student-004",
+      "name": "Nethmi Silva",
+      "registrationNumber": "20240004",
+      "updatedAt": 1737454252103
+    },
+    "student-005": {
+      "class": "A",
+      "createdAt": 1737454252104,
+      "grade": "Grade 2",
+      "id": "student-005",
+      "name": "Dineth Rajapaksa",
+      "registrationNumber": "20240005",
+      "updatedAt": 1737454252104
+    },
+    "student-006": {
+      "class": "A",
+      "createdAt": 1737454252105,
+      "grade": "Grade 2",
+      "id": "student-006",
+      "name": "Sanduni Wickramasinghe",
+      "registrationNumber": "20240006",
+      "updatedAt": 1737454252105
+    },
+    "student-007": {
+      "class": "B",
+      "createdAt": 1737454252106,
+      "grade": "Grade 2",
+      "id": "student-007",
+      "name": "Thisara Gunasekara",
+      "registrationNumber": "20240007",
+      "updatedAt": 1737454252106
+    },
+    "student-008": {
+      "class": "B",
+      "createdAt": 1737454252107,
+      "grade": "Grade 2",
+      "id": "student-008",
+      "name": "Amaya Bandara",
+      "registrationNumber": "20240008",
+      "updatedAt": 1737454252107
+    },
+    "student-009": {
+      "class": "A",
+      "createdAt": 1737454252108,
+      "grade": "Grade 3",
+      "id": "student-009",
+      "name": "Ravindu Jayawardena",
+      "registrationNumber": "20240009",
+      "updatedAt": 1737454252108
+    },
+    "student-010": {
+      "class": "A",
+      "createdAt": 1737454252109,
+      "grade": "Grade 3",
+      "id": "student-010",
+      "name": "Sithmi Ranasinghe",
+      "registrationNumber": "20240010",
+      "updatedAt": 1737454252109
+    },
+    "student-011": {
+      "class": "B",
+      "createdAt": 1737454252110,
+      "grade": "Grade 3",
+      "id": "student-011",
+      "name": "Dasun Karunaratne",
+      "registrationNumber": "20240011",
+      "updatedAt": 1737454252110
+    },
+    "student-012": {
+      "class": "B",
+      "createdAt": 1737454252111,
+      "grade": "Grade 3",
+      "id": "student-012",
+      "name": "Hansini Weerasinghe",
+      "registrationNumber": "20240012",
+      "updatedAt": 1737454252111
+    },
+    "student-013": {
+      "class": "A",
+      "createdAt": 1737454252112,
+      "grade": "Grade 4",
+      "id": "student-013",
+      "name": "Pasindu Mendis",
+      "registrationNumber": "20240013",
+      "updatedAt": 1737454252112
+    },
+    "student-014": {
+      "class": "A",
+      "createdAt": 1737454252113,
+      "grade": "Grade 4",
+      "id": "student-014",
+      "name": "Dulani Samaraweera",
+      "registrationNumber": "20240014",
+      "updatedAt": 1737454252113
+    },
+    "student-015": {
+      "class": "B",
+      "createdAt": 1737454252114,
+      "grade": "Grade 4",
+      "id": "student-015",
+      "name": "Isuru Gunawardana",
+      "registrationNumber": "20240015",
+      "updatedAt": 1737454252114
+    },
+    "student-016": {
+      "class": "B",
+      "createdAt": 1737454252115,
+      "grade": "Grade 4",
+      "id": "student-016",
+      "name": "Sewwandi Peris",
+      "registrationNumber": "20240016",
+      "updatedAt": 1737454252115
+    },
+    "student-017": {
+      "class": "A",
+      "createdAt": 1737454252116,
+      "grade": "Grade 5",
+      "id": "student-017",
+      "name": "Kasun Rathnayake",
+      "registrationNumber": "20240017",
+      "updatedAt": 1737454252116
+    },
+    "student-018": {
+      "class": "A",
+      "createdAt": 1737454252117,
+      "grade": "Grade 5",
+      "id": "student-018",
+      "name": "Dilini Amarasekara",
+      "registrationNumber": "20240018",
+      "updatedAt": 1737454252117
+    },
+    "student-019": {
+      "class": "B",
+      "createdAt": 1737454252118,
+      "grade": "Grade 5",
+      "id": "student-019",
+      "name": "Tharindu Senanayake",
+      "registrationNumber": "20240019",
+      "updatedAt": 1737454252118
+    },
+    "student-020": {
+      "class": "B",
+      "createdAt": 1737454252119,
+      "grade": "Grade 5",
+      "id": "student-020",
+      "name": "Madhavi Liyanage",
+      "registrationNumber": "20240020",
+      "updatedAt": 1737454252119
+    }
+  },
+  "users": {
+    "hddaCZz02CZG4cdWRDIlyokMEdZ2": {
+      "createdAt": 1737455307395,
+      "email": "teacher@attendancemarkin.com",
+      "role": "teacher"
+    },
+    "kYlQ6TO1HkRGnXD9Cd8msOS1Sif2": {
+      "createdAt": 1737455306597,
+      "email": "admin@attendancemarkin.com",
+      "role": "admin"
+    }
+  }
+}

@@ -345,7 +345,9 @@ export default function AttendancePage() {
       setSaving(true);
       setError('');
       setSuccess('');
-      await updateAttendanceRecord(selectedDate, selectedClass, attendance);
+      await updateAttendanceRecord(selectedDate, selectedClass, attendance, {
+        grade: selectedGrade
+      });
       setSuccess('Attendance updated successfully');
       setIsEditing(true);
       setOriginalAttendance(attendance);

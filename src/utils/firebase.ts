@@ -564,42 +564,84 @@ export const getAttendanceStats = async (
 export const updateAttendanceRecord = async (
   date: string,
   classId: string,
-  records: AttendanceStatus[]
-): Promise<void> => {
-  const attendanceRef = ref(database, `attendance/${date}/${classId}`);
-  const timestamp = Date.now();
-  
-  // Get existing record first
-  const snapshot = await get(attendanceRef);
-  if (!snapshot.exists()) {
-    throw new Error('No attendance record found for this date');
+  records: AttendanceStatus[],
+  metadata: {
+    grade: string;
+    period?: string;
+    academicYear?: string;
+    section?: string;
+    schoolDayType?: string;
   }
+): Promise<void> => {
+  try {
+    if (!auth.currentUser) {
+      throw new Error('You must be logged in to mark attendance');
+    }
 
-  const existingData = snapshot.val();
-  
-  // Format records with simplified attendance details
-  const formattedRecords = records.reduce((acc, record) => {
-    acc[record.studentId] = {
-      present: record.present,
-      timestamp,
-      markedBy: auth.currentUser?.email || 'unknown',
-      markedTime: new Date().toLocaleTimeString(),
-      note: record.note || '',
-      lastModifiedBy: auth.currentUser?.email || 'unknown',
-      lastModifiedAt: timestamp
+    // Check user role first
+    const userRole = await getUserRole(auth.currentUser.uid);
+    if (!userRole || (userRole !== 'admin' && userRole !== 'teacher')) {
+      throw new Error('You do not have permission to mark attendance. Only teachers and admins can mark attendance.');
+    }
+
+    const attendanceRef = ref(database, `attendance/${date}/${classId}`);
+    const timestamp = Date.now();
+    
+    // Get existing record first
+    const snapshot = await get(attendanceRef);
+    const existingData = snapshot.exists() ? snapshot.val() : {
+      id: `${date}_${classId}`,
+      date: date,
+      class: classId,
+      grade: metadata.grade,
+      academicYear: metadata.academicYear || new Date(date).getFullYear().toString(),
+      period: metadata.period || 'Morning',
+      section: metadata.section || 'Primary',
+      schoolDayType: metadata.schoolDayType || 'Regular',
+      lastModified: timestamp
     };
-    return acc;
-  }, {} as Record<string, any>);
+    
+    // Format records with simplified attendance details
+    const formattedRecords = records.reduce((acc, record) => {
+      acc[record.studentId] = {
+        present: record.present,
+        timestamp,
+        markedBy: auth.currentUser?.email || 'unknown',
+        markedTime: new Date().toLocaleTimeString(),
+        note: record.note || '',
+        lastModifiedBy: auth.currentUser?.email || 'unknown',
+        lastModifiedAt: timestamp
+      };
+      return acc;
+    }, {} as Record<string, any>);
 
-  // Update the record with new data while preserving metadata
-  await set(attendanceRef, {
-    ...existingData,
-    records: formattedRecords,
-    lastModified: timestamp,
-    lastModifiedBy: auth.currentUser?.email || 'unknown',
-    totalPresent: Object.values(formattedRecords).filter(r => r.present).length,
-    totalAbsent: Object.values(formattedRecords).filter(r => !r.present).length
-  });
+    // Calculate totals
+    const totalPresent = Object.values(formattedRecords).filter(r => r.present).length;
+    const totalAbsent = Object.values(formattedRecords).filter(r => !r.present).length;
+
+    // Update the record with new data while preserving metadata
+    await set(attendanceRef, {
+      ...existingData,
+      records: formattedRecords,
+      lastModified: timestamp,
+      lastModifiedBy: auth.currentUser?.email || 'unknown',
+      totalPresent,
+      totalAbsent,
+      submitted: true,
+      submittedBy: auth.currentUser?.email || 'unknown'
+    });
+
+    console.log('Attendance updated successfully:', {
+      date,
+      classId,
+      totalPresent,
+      totalAbsent,
+      updatedBy: auth.currentUser?.email
+    });
+  } catch (error: any) {
+    console.error('Error updating attendance:', error);
+    throw handleError(error, 'Failed to update attendance:');
+  }
 };
 
 // Cache storage
