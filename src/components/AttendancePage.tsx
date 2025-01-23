@@ -35,17 +35,29 @@ export default function AttendancePage() {
   const grades = {
     'Primary': ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
     'Middle': ['Grade 6', 'Grade 7', 'Grade 8'],
-    'Upper': ['Grade 9', 'Grade 10', 'Grade 11']
+    'Upper': ['Grade 9', 'Grade 10', 'Grade 11'],
+    'Advanced': ['Grade 12', 'Grade 13']
   };
 
-  // State for section selection
-  const [selectedSection, setSelectedSection] = useState<'Primary' | 'Middle' | 'Upper'>('Primary');
+  // State for section and stream selection
+  const [selectedSection, setSelectedSection] = useState<'Primary' | 'Middle' | 'Upper' | 'Advanced'>('Primary');
+  const [selectedStream, setSelectedStream] = useState<string>('');
   
-  // Get available classes based on selected section
-  const getAvailableClasses = () => classes[selectedSection] || [];
-  
-  // Get available grades based on selected section
-  const getAvailableGrades = () => grades[selectedSection] || [];
+  // Get available streams based on selected grade
+  const getAvailableStreams = () => {
+    if (selectedGrade && (selectedGrade.includes('12') || selectedGrade.includes('13'))) {
+      return ['Arts', 'Technology', 'Maths', 'Science', 'Bio'];
+    }
+    return [];
+  };
+
+  // Get available classes based on selected section and stream
+  const getAvailableClasses = () => {
+    if (selectedSection === 'Advanced' && selectedStream) {
+      return ['A', 'B', 'C'].map(cls => `${selectedStream}-${cls}`);
+    }
+    return classes[selectedSection] || [];
+  };
 
   useEffect(() => {
     // Reset states when component mounts
@@ -382,12 +394,18 @@ export default function AttendancePage() {
             <label className="block text-sm font-medium text-gray-700">Section</label>
             <select
               value={selectedSection}
-              onChange={(e) => setSelectedSection(e.target.value as 'Primary' | 'Middle' | 'Upper')}
+              onChange={(e) => {
+                setSelectedSection(e.target.value as 'Primary' | 'Middle' | 'Upper' | 'Advanced');
+                setSelectedGrade('');
+                setSelectedClass('');
+                setSelectedStream('');
+              }}
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             >
               <option value="Primary">Primary Section</option>
               <option value="Middle">Middle Section</option>
               <option value="Upper">Upper Section</option>
+              <option value="Advanced">Advanced Section</option>
             </select>
           </div>
           
@@ -395,15 +413,40 @@ export default function AttendancePage() {
             <label className="block text-sm font-medium text-gray-700">Grade</label>
             <select
               value={selectedGrade}
-              onChange={(e) => setSelectedGrade(e.target.value)}
+              onChange={(e) => {
+                setSelectedGrade(e.target.value);
+                setSelectedClass('');
+                if (!e.target.value.includes('12') && !e.target.value.includes('13')) {
+                  setSelectedStream('');
+                }
+              }}
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             >
               <option value="">Select Grade</option>
-              {getAvailableGrades().map(grade => (
+              {grades[selectedSection]?.map(grade => (
                 <option key={grade} value={grade}>{grade}</option>
               ))}
             </select>
           </div>
+
+          {selectedSection === 'Advanced' && selectedGrade && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Stream</label>
+              <select
+                value={selectedStream}
+                onChange={(e) => {
+                  setSelectedStream(e.target.value);
+                  setSelectedClass('');
+                }}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              >
+                <option value="">Select Stream</option>
+                {getAvailableStreams().map(stream => (
+                  <option key={stream} value={stream}>{stream}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700">Class</label>
@@ -411,6 +454,7 @@ export default function AttendancePage() {
               value={selectedClass}
               onChange={(e) => setSelectedClass(e.target.value)}
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              disabled={selectedSection === 'Advanced' && !selectedStream}
             >
               <option value="">Select Class</option>
               {getAvailableClasses().map(cls => (
