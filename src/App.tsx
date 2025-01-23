@@ -4,6 +4,7 @@ import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import AttendancePage from './components/AttendancePage';
 import StudentList from './components/StudentList';
+import AddStudent from './components/AddStudent';
 import Login from './components/Login';
 import AttendanceReports from './components/AttendanceReports';
 
@@ -27,6 +28,7 @@ function App() {
         <Route index element={<Dashboard />} />
         <Route path="attendance" element={<AttendancePage />} />
         <Route path="students" element={<StudentList />} />
+        <Route path="students/add" element={<AddStudent />} />
         <Route path="reports" element={<AttendanceReports />} />
       </Route>
     </Routes>
