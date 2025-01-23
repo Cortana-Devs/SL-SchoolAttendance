@@ -323,28 +323,39 @@ export const getUserRole = async (uid: string): Promise<'admin' | 'teacher' | nu
       return null;
     }
 
+    if (!auth.currentUser) {
+      console.error('No authenticated user');
+      return null;
+    }
+
     console.log('Getting role for uid:', uid);
-    const snapshot = await get(ref(database, `users/${uid}`));
+    const userRef = ref(database, `users/${uid}`);
+    const snapshot = await get(userRef);
     console.log('User data snapshot:', snapshot.val());
     
     if (!snapshot.exists()) {
       console.log('No user data found, attempting to create user data');
-      const user = auth.currentUser;
-      if (!user || !user.email) {
-        console.error('No authenticated user or email');
+      
+      if (!auth.currentUser.email) {
+        console.error('No email found for authenticated user');
         return null;
       }
 
-      const role = user.email.includes('admin') ? 'admin' : 'teacher';
+      // Determine role based on email
+      const role = auth.currentUser.email.includes('admin') ? 'admin' : 'teacher';
       const userData = {
-        email: user.email,
+        email: auth.currentUser.email,
         role,
         createdAt: Date.now()
       };
 
       try {
-        await set(ref(database, `users/${uid}`), userData);
+        await set(userRef, userData);
         console.log('Created user data:', userData);
+        
+        // Store role in localStorage for faster access
+        localStorage.setItem('userRole', role);
+        
         return role;
       } catch (error) {
         console.error('Error creating user data:', error);
@@ -358,6 +369,9 @@ export const getUserRole = async (uid: string): Promise<'admin' | 'teacher' | nu
       return null;
     }
 
+    // Store role in localStorage for faster access
+    localStorage.setItem('userRole', userData.role);
+    
     console.log('Returning role:', userData.role);
     return userData.role;
   } catch (error) {
