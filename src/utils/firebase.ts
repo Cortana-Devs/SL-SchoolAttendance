@@ -1,7 +1,7 @@
 import { ref, set, get, query, orderByChild, startAt, endAt, getDatabase } from 'firebase/database';
 import { database } from '../config/firebase';
 import { Student, StudentFormData, AttendanceRecord, AttendanceStatus } from '../types';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../config/firebase';
 
 // Helper function to handle Firebase errors with custom messages
