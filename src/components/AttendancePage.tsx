@@ -25,10 +25,11 @@ export default function AttendancePage() {
   const [originalAttendance, setOriginalAttendance] = useState<AttendanceStatus[]>([]);
 
   // Updated class structure for Sri Lankan schools
-  const classes = {
+  const classes: Record<'Primary' | 'Middle' | 'Upper' | 'Advanced', string[]> = {
     'Primary': ['A', 'B', 'C'],  // Primary classes typically have fewer sections
     'Middle': ['A', 'B', 'C', 'D'],  // Middle classes might have more sections
-    'Upper': ['A', 'B', 'C', 'D']    // Upper classes also have more sections
+    'Upper': ['A', 'B', 'C', 'D'],   // Upper classes also have more sections
+    'Advanced': ['A', 'B', 'C']      // Advanced classes (for streams)
   };
 
   // Updated grade structure for Sri Lankan schools
@@ -52,9 +53,9 @@ export default function AttendancePage() {
   };
 
   // Get available classes based on selected section and stream
-  const getAvailableClasses = () => {
+  const getAvailableClasses = (): string[] => {
     if (selectedSection === 'Advanced' && selectedStream) {
-      return ['A', 'B', 'C'].map(cls => `${selectedStream}-${cls}`);
+      return classes[selectedSection].map(cls => `${selectedStream}-${cls}`);
     }
     return classes[selectedSection] || [];
   };
