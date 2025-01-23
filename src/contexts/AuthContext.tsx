@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { 
-  signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
   User,
@@ -10,7 +9,7 @@ import {
   browserLocalPersistence
 } from 'firebase/auth';
 import { auth } from '../config/firebase';
-import { getUserRole } from '../utils/firebase';
+import { getUserRole, loginWithEmail } from '../utils/firebase';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -100,7 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function login(email: string, password: string) {
     setLoading(true);
     try {
-      const userCred = await signInWithEmailAndPassword(auth, email, password);
+      const userCred = await loginWithEmail(email, password);
       console.log('Logged in as:', email);
       const role = await getUserRole(userCred.user.uid);
       console.log('Role after login:', role);
@@ -120,7 +119,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+      const role = await getUserRole(result.user.uid);
+      if (role) {
+        localStorage.setItem('userRole', role);
+        setUserRole(role);
+      }
     } catch (error) {
       console.error('Google login error:', error);
       throw error;

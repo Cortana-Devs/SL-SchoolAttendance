@@ -269,15 +269,78 @@ export const setupTeacherAccount = async () => {
   }
 };
 
+export const loginWithEmail = async (email: string, password: string) => {
+  try {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const { user } = userCredential;
+
+    // Check if user exists in the database
+    const userRef = ref(database, `users/${user.uid}`);
+    const snapshot = await get(userRef);
+
+    if (!snapshot.exists()) {
+      // If user doesn't exist in database, set up their role based on email
+      const role = email.includes('admin') ? 'admin' : 'teacher';
+      await set(userRef, {
+        email: user.email,
+        role,
+        createdAt: Date.now()
+      });
+    }
+
+    return userCredential;
+  } catch (error) {
+    console.error('Login error:', error);
+    throw error;
+  }
+};
+
 export const getUserRole = async (uid: string): Promise<'admin' | 'teacher' | null> => {
   try {
-    const snapshot = await get(ref(database, `users/${uid}`));
-    if (!snapshot.exists()) {
+    if (!uid) {
+      console.error('No UID provided to getUserRole');
       return null;
     }
-    return snapshot.val().role;
+
+    console.log('Getting role for uid:', uid);
+    const snapshot = await get(ref(database, `users/${uid}`));
+    console.log('User data snapshot:', snapshot.val());
+    
+    if (!snapshot.exists()) {
+      console.log('No user data found, attempting to create user data');
+      const user = auth.currentUser;
+      if (!user || !user.email) {
+        console.error('No authenticated user or email');
+        return null;
+      }
+
+      const role = user.email.includes('admin') ? 'admin' : 'teacher';
+      const userData = {
+        email: user.email,
+        role,
+        createdAt: Date.now()
+      };
+
+      try {
+        await set(ref(database, `users/${uid}`), userData);
+        console.log('Created user data:', userData);
+        return role;
+      } catch (error) {
+        console.error('Error creating user data:', error);
+        return null;
+      }
+    }
+    
+    const userData = snapshot.val();
+    if (!userData.role) {
+      console.error('User data exists but no role found');
+      return null;
+    }
+
+    console.log('Returning role:', userData.role);
+    return userData.role;
   } catch (error) {
-    console.error('Error getting user role:', error);
+    console.error('Error in getUserRole:', error);
     return null;
   }
 };
@@ -288,19 +351,19 @@ export const setupInitialAccounts = async () => {
     const adminEmail = 'admin@attendancemarkin.com';
     const adminPassword = 'admin123';
     
-    let adminUid: string;
-    
+    // Try to create admin account
     try {
-      const adminCred = await signInWithEmailAndPassword(auth, adminEmail, adminPassword);
-      adminUid = adminCred.user.uid;
+      await createUserWithEmailAndPassword(auth, adminEmail, adminPassword);
     } catch (error: any) {
-      if (error.code === 'auth/user-not-found') {
-        const adminUserCred = await createUserWithEmailAndPassword(auth, adminEmail, adminPassword);
-        adminUid = adminUserCred.user.uid;
-      } else {
+      // If user already exists, that's fine
+      if (error.code !== 'auth/email-already-in-use') {
         throw error;
       }
     }
+
+    // Sign in as admin to get the UID
+    const adminCred = await signInWithEmailAndPassword(auth, adminEmail, adminPassword);
+    const adminUid = adminCred.user.uid;
 
     // Set admin role
     await set(ref(database, `users/${adminUid}`), {
@@ -309,25 +372,23 @@ export const setupInitialAccounts = async () => {
       createdAt: Date.now()
     });
 
-    await signOut(auth);
-
     // Setup teacher account
     const teacherEmail = 'teacher@attendancemarkin.com';
     const teacherPassword = 'teacher123';
     
-    let teacherUid: string;
-    
+    // Try to create teacher account
     try {
-      const teacherCred = await signInWithEmailAndPassword(auth, teacherEmail, teacherPassword);
-      teacherUid = teacherCred.user.uid;
+      await createUserWithEmailAndPassword(auth, teacherEmail, teacherPassword);
     } catch (error: any) {
-      if (error.code === 'auth/user-not-found') {
-        const teacherUserCred = await createUserWithEmailAndPassword(auth, teacherEmail, teacherPassword);
-        teacherUid = teacherUserCred.user.uid;
-      } else {
+      // If user already exists, that's fine
+      if (error.code !== 'auth/email-already-in-use') {
         throw error;
       }
     }
+
+    // Sign in as teacher to get the UID
+    const teacherCred = await signInWithEmailAndPassword(auth, teacherEmail, teacherPassword);
+    const teacherUid = teacherCred.user.uid;
 
     // Set teacher role
     await set(ref(database, `users/${teacherUid}`), {
@@ -335,8 +396,6 @@ export const setupInitialAccounts = async () => {
       role: 'teacher',
       createdAt: Date.now()
     });
-
-    await signOut(auth);
 
     return true;
   } catch (error) {
