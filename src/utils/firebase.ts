@@ -368,55 +368,81 @@ export const getUserRole = async (uid: string): Promise<'admin' | 'teacher' | nu
 
 export const setupInitialAccounts = async () => {
   try {
+    const db = getDatabase();
+    
+    // First, clean up any existing incorrect user entries
+    const usersRef = ref(db, 'users');
+    const snapshot = await get(usersRef);
+    if (snapshot.exists()) {
+      const users = snapshot.val();
+      // Remove entries with hardcoded UIDs
+      if (users.admin123uid) {
+        await set(ref(db, 'users/admin123uid'), null);
+      }
+      if (users.teacher123uid) {
+        await set(ref(db, 'users/teacher123uid'), null);
+      }
+    }
+
     // Setup admin account
     const adminEmail = 'admin@attendancemarkin.com';
     const adminPassword = 'admin123';
     
-    // Try to create admin account
+    let adminUid;
     try {
-      await createUserWithEmailAndPassword(auth, adminEmail, adminPassword);
+      // Try to create new admin account
+      const adminCred = await createUserWithEmailAndPassword(auth, adminEmail, adminPassword);
+      adminUid = adminCred.user.uid;
     } catch (error: any) {
-      // If user already exists, that's fine
-      if (error.code !== 'auth/email-already-in-use') {
+      if (error.code === 'auth/email-already-in-use') {
+        // If admin exists, sign in to get the UID
+        const adminCred = await signInWithEmailAndPassword(auth, adminEmail, adminPassword);
+        adminUid = adminCred.user.uid;
+      } else {
         throw error;
       }
     }
 
-    // Sign in as admin to get the UID
-    const adminCred = await signInWithEmailAndPassword(auth, adminEmail, adminPassword);
-    const adminUid = adminCred.user.uid;
-
-    // Set admin role
-    await set(ref(database, `users/${adminUid}`), {
-      email: adminEmail,
-      role: 'admin',
-      createdAt: Date.now()
-    });
+    // Set admin role with actual UID
+    if (adminUid) {
+      await set(ref(db, `users/${adminUid}`), {
+        email: adminEmail,
+        role: 'admin',
+        createdAt: Date.now()
+      });
+    }
 
     // Setup teacher account
     const teacherEmail = 'teacher@attendancemarkin.com';
     const teacherPassword = 'teacher123';
     
-    // Try to create teacher account
+    let teacherUid;
     try {
-      await createUserWithEmailAndPassword(auth, teacherEmail, teacherPassword);
+      // Try to create new teacher account
+      const teacherCred = await createUserWithEmailAndPassword(auth, teacherEmail, teacherPassword);
+      teacherUid = teacherCred.user.uid;
     } catch (error: any) {
-      // If user already exists, that's fine
-      if (error.code !== 'auth/email-already-in-use') {
+      if (error.code === 'auth/email-already-in-use') {
+        // If teacher exists, sign in to get the UID
+        const teacherCred = await signInWithEmailAndPassword(auth, teacherEmail, teacherPassword);
+        teacherUid = teacherCred.user.uid;
+      } else {
         throw error;
       }
     }
 
-    // Sign in as teacher to get the UID
-    const teacherCred = await signInWithEmailAndPassword(auth, teacherEmail, teacherPassword);
-    const teacherUid = teacherCred.user.uid;
+    // Set teacher role with actual UID
+    if (teacherUid) {
+      await set(ref(db, `users/${teacherUid}`), {
+        email: teacherEmail,
+        role: 'teacher',
+        createdAt: Date.now()
+      });
+    }
 
-    // Set teacher role
-    await set(ref(database, `users/${teacherUid}`), {
-      email: teacherEmail,
-      role: 'teacher',
-      createdAt: Date.now()
-    });
+    console.log('Initial accounts setup completed successfully');
+    console.log('Admin UID:', adminUid);
+    console.log('Teacher UID:', teacherUid);
 
     return true;
   } catch (error) {
