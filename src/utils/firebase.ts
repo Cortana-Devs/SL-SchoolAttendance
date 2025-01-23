@@ -198,6 +198,16 @@ export const saveDraftAttendance = async (
   console.log('Records:', records);
 
   try {
+    if (!auth.currentUser) {
+      throw new Error('You must be logged in to mark attendance');
+    }
+
+    // Check user role first
+    const userRole = await getUserRole(auth.currentUser.uid);
+    if (!userRole || (userRole !== 'admin' && userRole !== 'teacher')) {
+      throw new Error('You do not have permission to mark attendance. Only teachers and admins can mark attendance.');
+    }
+
     const attendanceRef = ref(database, `attendance/${date}/${classId}`);
     const timestamp = Date.now();
 
@@ -207,7 +217,10 @@ export const saveDraftAttendance = async (
         present: record.present,
         timestamp: timestamp,
         markedBy: auth.currentUser?.email || 'unknown',
-        markedTime: new Date().toLocaleTimeString()
+        markedTime: new Date().toLocaleTimeString(),
+        note: record.note || '',
+        lastModifiedBy: auth.currentUser?.email || 'unknown',
+        lastModifiedAt: timestamp
       };
       return acc;
     }, {} as Record<string, any>);
@@ -219,9 +232,17 @@ export const saveDraftAttendance = async (
       class: classId,
       grade,
       lastModified: timestamp,
+      lastModifiedBy: auth.currentUser?.email || 'unknown',
       totalPresent: records.filter(r => r.present).length,
       totalAbsent: records.filter(r => !r.present).length,
-      records: formattedRecords
+      records: formattedRecords,
+      section: grade.includes('1') || grade.includes('2') || grade.includes('3') || grade.includes('4') || grade.includes('5') 
+        ? 'Primary' 
+        : grade.includes('6') || grade.includes('7') || grade.includes('8')
+        ? 'Middle'
+        : grade.includes('12') || grade.includes('13')
+        ? 'Advanced'
+        : 'Upper'
     };
 
     console.log('Saving attendance data:', attendanceData);
