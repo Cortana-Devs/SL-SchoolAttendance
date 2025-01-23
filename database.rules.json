@@ -13,6 +13,7 @@
     "students": {
       ".read": "auth != null",
       ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'teacher')",
+      ".indexOn": ["grade", "class", "name"],
       "$studentId": {
         ".validate": "newData.hasChildren(['name', 'grade', 'class', 'registrationNumber'])"
       }
@@ -20,7 +21,9 @@
     "attendance": {
       ".read": "auth != null",
       ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'teacher')",
+      ".indexOn": ["date", "grade", "class"],
       "$date": {
+        ".indexOn": ["grade", "class", "section"],
         "$class": {
           ".validate": "newData.hasChildren(['academicYear', 'class', 'date', 'grade', 'section', 'period'])",
           "records": {
@@ -35,6 +38,7 @@
       "cached": {
         ".read": "auth != null",
         ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'teacher')",
+        ".indexOn": ["timestamp"],
         "$statId": {
           ".validate": "newData.hasChildren(['data', 'timestamp'])",
           "data": {
@@ -45,6 +49,7 @@
       "daily": {
         ".read": "auth != null",
         ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'teacher')",
+        ".indexOn": ["date"],
         "$date": {
           ".validate": "newData.hasChildren(['totalPresent', 'totalAbsent', 'totalStudents'])"
         }
@@ -52,7 +57,9 @@
       "monthly": {
         ".read": "auth != null",
         ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('role').val() === 'teacher')",
+        ".indexOn": ["year", "month"],
         "$year": {
+          ".indexOn": ["month"],
           "$month": {
             ".validate": "newData.hasChildren(['totalPresent', 'totalAbsent', 'totalStudents', 'averageAttendance'])"
           }
