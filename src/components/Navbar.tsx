@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
-  const { currentUser, userRole, logout } = useAuth();
+  const { userRole, logout } = useAuth();
   const location = useLocation();
 
   const navigation = [
@@ -33,7 +33,7 @@ export default function Navbar() {
             {/* Desktop Navigation */}
             <div className="hidden sm:ml-6 sm:flex sm:space-x-4">
               {navigation.map((item) => (
-                item.role.includes(userRole) && (
+                item.role.includes(userRole || '') && (
                   <Link
                     key={item.name}
                     to={item.href}
@@ -90,7 +90,7 @@ export default function Navbar() {
       <div className={`${isOpen ? 'block' : 'hidden'} sm:hidden`}>
         <div className="pt-2 pb-3 space-y-1">
           {navigation.map((item) => (
-            item.role.includes(userRole) && (
+            item.role.includes(userRole || '') && (
               <Link
                 key={item.name}
                 to={item.href}

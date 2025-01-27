@@ -1,251 +1,106 @@
 import { useAuth } from '../contexts/AuthContext';
-import { useState, useEffect } from 'react';
-import { getStudents, getDraftAttendance, addSampleStudents, getCachedDailyStats, getCachedMonthlyStats } from '../utils/firebase';
 import { Link } from 'react-router-dom';
 
 export default function Dashboard() {
   const { currentUser, userRole } = useAuth();
-  const [totalStudents, setTotalStudents] = useState(0);
-  const [todayAttendance, setTodayAttendance] = useState(0);
-  const [monthlyAverage, setMonthlyAverage] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
-  const [error, setError] = useState('');
-  const [stats, setStats] = useState({
-    totalStudents: 0,
-    todayAttendance: 0,
-    monthlyAverage: 0
-  });
 
-  console.log('Dashboard - Current user:', currentUser?.email);
-  console.log('Dashboard - User role:', userRole);
-
-  useEffect(() => {
-    async function loadDashboardData() {
-      try {
-        setLoading(true);
-        console.log('Starting to load dashboard data...');
-
-        // Get total students
-        console.log('Calling getStudents()...');
-        const students = await getStudents();
-        console.log('getStudents() returned:', students);
-        if (!students) {
-          console.log('Warning: getStudents() returned null or undefined');
-          setTotalStudents(0);
-        } else {
-          setTotalStudents(students.length);
-          console.log('Total students count set to:', students.length);
-        }
-
-        // Calculate today's attendance
-        const today = new Date().toISOString().split('T')[0];
-        console.log('Today\'s date for attendance:', today);
-        const classes = ['A', 'B', 'C', 'D'];
-        let totalPresent = 0;
-        let totalRecords = 0;
-
-        // Get attendance for each class
-        for (const classId of classes) {
-          console.log(`Checking attendance for class ${classId}...`);
-          try {
-            const attendance = await getDraftAttendance(today, classId);
-            console.log(`Class ${classId} attendance data:`, attendance);
-            
-            if (attendance && attendance.records) {
-              const records = Object.values(attendance.records);
-              console.log(`Found ${records.length} records for class ${classId}`);
-              records.forEach(record => {
-                totalRecords++;
-                if (record.present) totalPresent++;
-              });
-            } else {
-              console.log(`No attendance records for class ${classId}`);
-            }
-          } catch (error) {
-            console.error(`Error getting attendance for class ${classId}:`, error);
-          }
-        }
-
-        // Calculate today's attendance percentage
-        console.log('Attendance totals:', { totalPresent, totalRecords });
-        const todayPercentage = totalRecords > 0 
-          ? Math.round((totalPresent / totalRecords) * 100) 
-          : 0;
-        console.log('Setting today\'s attendance to:', todayPercentage);
-        setTodayAttendance(todayPercentage);
-
-        // Calculate monthly average
-        const currentDate = new Date();
-        const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
-          .toISOString().split('T')[0];
-        const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0)
-          .toISOString().split('T')[0];
-        
-        console.log('Calculating monthly average between:', { startOfMonth, endOfMonth });
-        let monthlyPresent = 0;
-        let monthlyTotal = 0;
-
-        // Get attendance for each day of the month
-        for (let d = new Date(startOfMonth); d <= new Date(endOfMonth); d.setDate(d.getDate() + 1)) {
-          const date = d.toISOString().split('T')[0];
-          console.log(`Checking attendance for date: ${date}`);
-          
-          for (const classId of classes) {
-            try {
-              const attendance = await getDraftAttendance(date, classId);
-              if (attendance && attendance.records) {
-                const records = Object.values(attendance.records);
-                console.log(`Found ${records.length} records for ${date}, class ${classId}`);
-                records.forEach(record => {
-                  monthlyTotal++;
-                  if (record.present) monthlyPresent++;
-                });
-              }
-            } catch (error) {
-              console.error(`Error getting attendance for ${date}, class ${classId}:`, error);
-            }
-          }
-        }
-
-        // Calculate monthly average percentage
-        console.log('Monthly totals:', { monthlyPresent, monthlyTotal });
-        const monthlyPercentage = monthlyTotal > 0 
-          ? Math.round((monthlyPresent / monthlyTotal) * 100) 
-          : 0;
-        console.log('Setting monthly average to:', monthlyPercentage);
-        setMonthlyAverage(monthlyPercentage);
-
-      } catch (error) {
-        console.error('Error loading dashboard data:', error);
-        setMessage({ type: 'error', text: 'Failed to load dashboard data' });
-      } finally {
-        setLoading(false);
-        console.log('Dashboard data loading completed');
-      }
-    }
-
-    console.log('Dashboard useEffect triggered - calling loadDashboardData()');
-    loadDashboardData();
-  }, []);
-
-  useEffect(() => {
-    async function loadDashboardStats() {
-      try {
-        setLoading(true);
-        setError('');
-
-        // Get today's date
-        const today = new Date().toISOString().split('T')[0];
-        const currentYear = new Date().getFullYear();
-        const currentMonth = new Date().getMonth() + 1;
-
-        // Fetch stats in parallel
-        const [dailyStats, monthlyStats] = await Promise.all([
-          getCachedDailyStats(today),
-          getCachedMonthlyStats(currentYear, currentMonth)
-        ]);
-
-        setStats({
-          totalStudents: dailyStats.totalStudents,
-          todayAttendance: dailyStats.attendanceRate,
-          monthlyAverage: monthlyStats.averageAttendance
-        });
-      } catch (err) {
-        console.error('Error loading dashboard stats:', err);
-        setError('Failed to load dashboard statistics');
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadDashboardStats();
-  }, []);
-
-  const handleAddSampleData = async () => {
-    try {
-      setLoading(true);
-      setMessage(null);
-      const success = await addSampleStudents();
-      if (success) {
-        setMessage({ type: 'success', text: 'Sample students added successfully!' });
-        // Refresh the total students count
-        const students = await getStudents();
-        setTotalStudents(students.length);
-      } else {
-        setMessage({ type: 'error', text: 'Failed to add sample students.' });
-      }
-    } catch (error) {
-      console.error('Error adding sample data:', error);
-      setMessage({ type: 'error', text: 'Failed to add sample students.' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // For teachers, show only the modern welcome page
   if (userRole === 'teacher') {
     return (
-      <div className="space-y-6">
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            Welcome, {currentUser?.email?.split('@')[0] || 'Teacher'}!
-          </h2>
-          <div className="space-y-4">
-            <p className="text-gray-600">
-              You can mark attendance and view student lists.
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-indigo-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          {/* Hero Section */}
+          <div className="text-center mb-16">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-gray-900 mb-4">
+              Welcome to{' '}
+              <span className="text-indigo-600">Smart Attendance</span>
+            </h1>
+            <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto">
+              Streamline your attendance management with our modern, efficient system designed for Sri Lankan schools.
             </p>
-            <div className="flex space-x-4">
-              <Link
+          </div>
+
+          {/* Feature Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+            <div className="bg-white p-8 rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-300">
+              <div className="h-12 w-12 bg-indigo-100 rounded-xl flex items-center justify-center mb-6">
+                <svg className="h-6 w-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Easy Tracking</h3>
+              <p className="text-gray-600">
+                Mark attendance quickly and efficiently with our intuitive interface.
+              </p>
+            </div>
+
+            <div className="bg-white p-8 rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-300">
+              <div className="h-12 w-12 bg-indigo-100 rounded-xl flex items-center justify-center mb-6">
+                <svg className="h-6 w-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Detailed Reports</h3>
+              <p className="text-gray-600">
+                Generate comprehensive attendance reports with just a few clicks.
+              </p>
+            </div>
+
+            <div className="bg-white p-8 rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-300">
+              <div className="h-12 w-12 bg-indigo-100 rounded-xl flex items-center justify-center mb-6">
+                <svg className="h-6 w-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Secure Data</h3>
+              <p className="text-gray-600">
+                Your attendance data is safely stored and backed up automatically.
+              </p>
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="bg-white rounded-2xl shadow-sm p-8 mb-16">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-6">Quick Actions</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Link 
                 to="/attendance"
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+                className="flex items-center justify-center px-4 py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl transition-colors duration-200"
               >
                 Mark Attendance
               </Link>
-              <Link
+              <Link 
                 to="/students"
-                className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                className="flex items-center justify-center px-4 py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl transition-colors duration-200"
               >
                 View Students
               </Link>
             </div>
           </div>
+
+          {/* Help Section */}
+          <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 rounded-2xl p-8 text-white">
+            <div className="flex flex-col md:flex-row items-center justify-between">
+              <div className="mb-6 md:mb-0">
+                <h2 className="text-2xl font-semibold mb-2">Need Help?</h2>
+                <p className="text-indigo-100">
+                  Check out our documentation or contact support for assistance.
+                </p>
+              </div>
+              <Link 
+                to="/help"
+                className="px-6 py-3 bg-white text-indigo-600 rounded-xl hover:bg-indigo-50 transition-colors duration-200"
+              >
+                View Documentation
+              </Link>
+            </div>
+          </div>
         </div>
-
-        {loading ? (
-          <div className="flex justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Today's Overview</h3>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Students Present</span>
-                  <span className="text-lg font-medium text-indigo-600">{todayAttendance}%</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Total Students</span>
-                  <span className="text-lg font-medium text-indigo-600">{totalStudents}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Monthly Statistics</h3>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Average Attendance</span>
-                  <span className="text-lg font-medium text-purple-600">{monthlyAverage}%</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     );
   }
 
+  // For admin, show a simplified dashboard without unnecessary stats loading
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-lg shadow-sm p-6">
@@ -253,64 +108,28 @@ export default function Dashboard() {
           Welcome, {currentUser?.email?.split('@')[0] || 'Administrator'}!
         </h2>
 
-        {error && (
-          <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
-            <p className="text-sm text-red-700">{error}</p>
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Administrative Actions</h3>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Link
+              to="/students/add"
+              className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+            >
+              Add Student
+            </Link>
+            <Link
+              to="/students"
+              className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+            >
+              Manage Students
+            </Link>
+            <Link
+              to="/reports"
+              className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+            >
+              View Reports
+            </Link>
           </div>
-        )}
-
-        {message && (
-          <div className={`mb-4 p-4 rounded-md ${message.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-            {message.text}
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-blue-50 rounded-lg p-4">
-            <h3 className="text-lg font-medium text-blue-800">Total Students</h3>
-            <p className="text-3xl font-bold text-blue-600 mt-2">
-              {loading ? '...' : stats.totalStudents}
-            </p>
-          </div>
-
-          <div className="bg-green-50 rounded-lg p-4">
-            <h3 className="text-lg font-medium text-green-800">Today's Attendance</h3>
-            <p className="text-3xl font-bold text-green-600 mt-2">
-              {loading ? '...' : `${stats.todayAttendance}%`}
-            </p>
-          </div>
-
-          <div className="bg-purple-50 rounded-lg p-4">
-            <h3 className="text-lg font-medium text-purple-800">Monthly Average</h3>
-            <p className="text-3xl font-bold text-purple-600 mt-2">
-              {loading ? '...' : `${stats.monthlyAverage}%`}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Administrative Actions</h3>
-        <div className="flex flex-col sm:flex-row gap-3">
-          <Link
-            to="/students/add"
-            className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
-          >
-            Add Student
-          </Link>
-          <Link
-            to="/students"
-            className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
-          >
-            Manage Students
-          </Link>
-          <button
-            onClick={handleAddSampleData}
-            disabled={loading}
-            className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
-          >
-            {loading ? 'Adding...' : 'Add Sample Data'}
-          </button>
         </div>
       </div>
     </div>

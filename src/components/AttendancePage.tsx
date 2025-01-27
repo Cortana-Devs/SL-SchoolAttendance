@@ -10,6 +10,9 @@ import {
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { AttendancePDF } from './AttendancePDF';
 import { useAuth } from '../contexts/AuthContext';
+import { ref, get } from 'firebase/database';
+import { database } from '../config/firebase';
+import { openDB } from 'idb';
 
 export default function AttendancePage() {
   const { userRole } = useAuth();
@@ -23,6 +26,7 @@ export default function AttendancePage() {
   const [success, setSuccess] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [originalAttendance, setOriginalAttendance] = useState<AttendanceStatus[]>([]);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   // Updated class structure for Sri Lankan schools
   const classes: Record<'Primary' | 'Middle' | 'Upper' | 'Advanced', string[]> = {
@@ -188,7 +192,7 @@ export default function AttendancePage() {
     console.log('Current attendance state:', attendance);
     
     try {
-      // Create updated attendance first
+      // Create updated attendance first with the new status
       const updatedAttendance = attendance.map(record => {
         if (record.studentId === studentId) {
           return {
@@ -199,9 +203,18 @@ export default function AttendancePage() {
         return record;
       });
 
+      // If student doesn't exist in attendance, add them
+      if (!updatedAttendance.find(record => record.studentId === studentId)) {
+        updatedAttendance.push({
+          studentId,
+          present: status === 'present',
+          note: ''
+        });
+      }
+
       console.log('Updated attendance records:', updatedAttendance);
 
-      // Update state immediately
+      // Update state immediately for UI responsiveness
       setAttendance(updatedAttendance);
 
       // Save to server if we have required data
@@ -216,6 +229,27 @@ export default function AttendancePage() {
         await saveDraftAttendance(selectedDate, selectedClass, selectedGrade, updatedAttendance);
         console.log('Successfully saved draft attendance');
         setError('');
+
+        // Save to localStorage
+        const stateToSave = {
+          date: selectedDate,
+          class: selectedClass,
+          attendance: updatedAttendance,
+          submitted: false
+        };
+        localStorage.setItem(
+          `attendance_${selectedDate}_${selectedClass}`,
+          JSON.stringify(stateToSave)
+        );
+
+        // Save to IndexedDB
+        try {
+          const db = await openDB('attendanceDB', 1);
+          await db.put('attendance', stateToSave, `${selectedDate}_${selectedClass}`);
+        } catch (error) {
+          console.error('Error saving to IndexedDB:', error);
+        }
+
       } else {
         console.warn('Missing required data:', { selectedClass, selectedGrade });
       }
@@ -332,14 +366,31 @@ export default function AttendancePage() {
       setError('');
       setSuccess('');
       
-      // First save as draft to ensure latest state is saved
-      await saveDraftAttendance(selectedDate, selectedClass, selectedGrade, attendance);
-      // Then submit the attendance
+      // Save to Firebase
       await saveAttendance(selectedDate, selectedClass, selectedGrade, attendance);
       
+      // Update local storage
+      const stateToSave = {
+        date: selectedDate,
+        class: selectedClass,
+        attendance: attendance,
+        submitted: true
+      };
+      localStorage.setItem(
+        `attendance_${selectedDate}_${selectedClass}`,
+        JSON.stringify(stateToSave)
+      );
+
+      // Update IndexedDB
+      try {
+        const db = await openDB('attendanceDB', 1);
+        await db.put('attendance', stateToSave, `${selectedDate}_${selectedClass}`);
+      } catch (error) {
+        console.error('Error saving to IndexedDB:', error);
+      }
+
       setSuccess('Attendance submitted successfully');
-      setIsEditing(true);
-      setOriginalAttendance(attendance);
+      setIsSubmitted(true);
     } catch (err) {
       setError('Failed to submit attendance');
       console.error(err);
@@ -376,6 +427,154 @@ export default function AttendancePage() {
     setAttendance(originalAttendance);
     setIsEditing(true);
   }
+
+  // Add this function to check submission status
+  const checkSubmissionStatus = async (date: string, classId: string) => {
+    try {
+      const attendanceRef = ref(database, `attendance/${date}/${classId}`);
+      const snapshot = await get(attendanceRef);
+      
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        return {
+          submitted: data.submitted || false,
+          attendance: data.records ? Object.entries(data.records).map(([studentId, record]: [string, any]) => ({
+            studentId,
+            present: record.present,
+            note: record.note || ''
+          })) : []
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error('Error checking submission status:', error);
+      return null;
+    }
+  };
+
+  // Add these effects for state persistence
+  useEffect(() => {
+    // First try: Check localStorage
+    const savedState = localStorage.getItem(`attendance_${selectedDate}_${selectedClass}`);
+    if (savedState !== null) {
+      try {
+        const parsed = JSON.parse(savedState);
+        setIsSubmitted(parsed.submitted);
+        if (parsed.attendance) {
+          setAttendance(parsed.attendance);
+        }
+      } catch (error) {
+        console.error('Error parsing localStorage state:', error);
+      }
+    }
+
+    // Second try: Check IndexedDB
+    const checkIndexedDB = async () => {
+      try {
+        const db = await openDB('attendanceDB', 1, {
+          upgrade(db) {
+            db.createObjectStore('attendance');
+          },
+        });
+        const result = await db.get('attendance', `${selectedDate}_${selectedClass}`);
+        if (result) {
+          setIsSubmitted(result.submitted);
+          if (result.attendance) {
+            setAttendance(result.attendance);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking IndexedDB:', error);
+      }
+    };
+    checkIndexedDB();
+
+    // Third try: Check Firebase
+    if (selectedDate && selectedClass) {
+      checkSubmissionStatus(selectedDate, selectedClass).then(status => {
+        if (status) {
+          setIsSubmitted(status.submitted);
+          if (status.attendance.length > 0) {
+            setAttendance(status.attendance);
+            // Update local storage with Firebase data
+            const stateToSave = {
+              date: selectedDate,
+              class: selectedClass,
+              attendance: status.attendance,
+              submitted: status.submitted
+            };
+            localStorage.setItem(
+              `attendance_${selectedDate}_${selectedClass}`,
+              JSON.stringify(stateToSave)
+            );
+          }
+        }
+      });
+    }
+  }, [selectedDate, selectedClass]);
+
+  // Add this effect to sync state across tabs
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key?.startsWith('attendance_')) {
+        const [, date, classId] = e.key.split('_');
+        if (date === selectedDate && classId === selectedClass && e.newValue) {
+          try {
+            const newState = JSON.parse(e.newValue);
+            setIsSubmitted(newState.submitted);
+            if (newState.attendance) {
+              setAttendance(newState.attendance);
+            }
+          } catch (error) {
+            console.error('Error parsing storage change:', error);
+          }
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [selectedDate, selectedClass]);
+
+  // Add this function for periodic auto-save
+  useEffect(() => {
+    let autoSaveInterval: NodeJS.Timeout;
+
+    if (attendance.length > 0 && !isSubmitted) {
+      autoSaveInterval = setInterval(() => {
+        const stateToSave = {
+          date: selectedDate,
+          class: selectedClass,
+          attendance: attendance,
+          submitted: false
+        };
+
+        // Save to localStorage
+        localStorage.setItem(
+          `attendance_${selectedDate}_${selectedClass}`,
+          JSON.stringify(stateToSave)
+        );
+
+        // Save to IndexedDB
+        const saveToIndexedDB = async () => {
+          try {
+            const db = await openDB('attendanceDB', 1);
+            await db.put('attendance', stateToSave, `${selectedDate}_${selectedClass}`);
+          } catch (error) {
+            console.error('Error auto-saving to IndexedDB:', error);
+          }
+        };
+        saveToIndexedDB();
+
+      }, 30000); // Auto-save every 30 seconds
+    }
+
+    return () => {
+      if (autoSaveInterval) {
+        clearInterval(autoSaveInterval);
+      }
+    };
+  }, [attendance, selectedDate, selectedClass, isSubmitted]);
 
   return (
     <div className="space-y-6">
@@ -540,7 +739,7 @@ export default function AttendancePage() {
                           <button
                             onClick={() => toggleAttendance(student.id, 'present')}
                             className={`px-3 py-1 text-sm rounded-full transition-colors duration-150 ${
-                              record?.present
+                              attendance.find(r => r.studentId === student.id)?.present
                                 ? 'bg-green-100 text-green-800'
                                 : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
                             }`}

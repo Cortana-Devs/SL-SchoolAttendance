@@ -7,6 +7,7 @@ export default function StudentList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchIndex, setSearchIndex] = useState('');
   const [selectedGrade, setSelectedGrade] = useState('');
   const [searchLoading, setSearchLoading] = useState(false);
   const [filterLoading, setFilterLoading] = useState(false);
@@ -15,8 +16,14 @@ export default function StudentList() {
   const [currentPage, setCurrentPage] = useState(1);
   const studentsPerPage = 10;
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
-
-  const grades = ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'];
+  const [selectedSection, setSelectedSection] = useState<'Primary' | 'Middle' | 'Upper' | 'Advanced'>('Primary');
+  
+  const grades = {
+    'Primary': ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
+    'Middle': ['Grade 6', 'Grade 7', 'Grade 8'],
+    'Upper': ['Grade 9', 'Grade 10', 'Grade 11'],
+    'Advanced': ['Grade 12', 'Grade 13']
+  };
 
   useEffect(() => {
     loadStudents();
@@ -36,17 +43,34 @@ export default function StudentList() {
     }
   }
 
-  async function handleSearch(value: string) {
-    setSearchTerm(value);
+  async function handleSearch(value: string, type: 'name' | 'index') {
+    if (type === 'name') {
+      setSearchTerm(value);
+    } else {
+      setSearchIndex(value);
+    }
+
     if (!value) {
-      loadStudents();
+      if (type === 'name') {
+        setSearchTerm('');
+      } else {
+        setSearchIndex('');
+      }
+      if (!searchTerm && !searchIndex) {
+        loadStudents();
+      }
       return;
     }
 
     try {
       setSearchLoading(true);
       setError('');
-      const results = await searchStudents(value);
+      let results;
+      if (type === 'name') {
+        results = await searchStudents(value);
+      } else {
+        results = await searchStudents(value, 'index');
+      }
       setStudents(results);
     } catch (err) {
       setError('Failed to search students');
@@ -146,14 +170,25 @@ export default function StudentList() {
       )}
       
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex-1 relative">
-          <input
-            type="text"
-            placeholder="Search students..."
-            value={searchTerm}
-            onChange={(e) => handleSearch(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-          />
+        <div className="flex-1 flex gap-4">
+          <div className="flex-1 relative">
+            <input
+              type="text"
+              placeholder="Search by name..."
+              value={searchTerm}
+              onChange={(e) => handleSearch(e.target.value, 'name')}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            />
+          </div>
+          <div className="flex-1 relative">
+            <input
+              type="text"
+              placeholder="Search by index number..."
+              value={searchIndex}
+              onChange={(e) => handleSearch(e.target.value, 'index')}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            />
+          </div>
           {searchLoading && (
             <div className="absolute right-3 top-1/2 -translate-y-1/2">
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-600"></div>
@@ -162,12 +197,24 @@ export default function StudentList() {
         </div>
         <div className="w-full sm:w-48 relative">
           <select
+            value={selectedSection}
+            onChange={(e) => setSelectedSection(e.target.value as 'Primary' | 'Middle' | 'Upper' | 'Advanced')}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          >
+            <option value="Primary">Primary Section</option>
+            <option value="Middle">Middle Section</option>
+            <option value="Upper">Upper Section</option>
+            <option value="Advanced">Advanced Section</option>
+          </select>
+        </div>
+        <div className="w-full sm:w-48 relative">
+          <select
             value={selectedGrade}
             onChange={(e) => handleGradeFilter(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           >
             <option value="">All Grades</option>
-            {grades.map((grade) => (
+            {grades[selectedSection]?.map((grade) => (
               <option key={grade} value={grade}>
                 {grade}
               </option>

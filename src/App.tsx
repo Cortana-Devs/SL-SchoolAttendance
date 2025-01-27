@@ -7,6 +7,7 @@ import StudentList from './components/StudentList';
 import AddStudent from './components/AddStudent';
 import Login from './components/Login';
 import AttendanceReports from './components/AttendanceReports';
+import Help from './components/Help';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { currentUser } = useAuth();
@@ -30,6 +31,7 @@ function App() {
         <Route path="students" element={<StudentList />} />
         <Route path="students/add" element={<AddStudent />} />
         <Route path="reports" element={<AttendanceReports />} />
+        <Route path="help" element={<Help />} />
       </Route>
     </Routes>
   );
