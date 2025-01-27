@@ -55,19 +55,30 @@ export const getStudents = async (): Promise<Student[]> => {
   }
 };
 
-export const searchStudents = async (name: string): Promise<Student[]> => {
-  const searchQuery = query(
-    ref(database, 'students'),
-    orderByChild('name'),
-    startAt(name.toLowerCase()),
-    endAt(name.toLowerCase() + '\uf8ff')
-  );
+export async function searchStudents(query: string, type: 'name' | 'index' = 'name') {
+  try {
+    const studentsRef = ref(database, 'students');
+    const searchQuery = query.toLowerCase();
 
-  const snapshot = await get(searchQuery);
-  if (!snapshot.exists()) return [];
+    // Get all students first
+    const snapshot = await get(studentsRef);
+    if (!snapshot.exists()) return [];
 
-  return Object.values(snapshot.val() as Record<string, Student>);
-};
+    const students = Object.values(snapshot.val() as Record<string, Student>);
+
+    // Filter based on search type
+    return students.filter(student => {
+      if (type === 'name') {
+        return student.name.toLowerCase().includes(searchQuery);
+      } else {
+        return student.registrationNumber.toLowerCase().includes(searchQuery);
+      }
+    });
+  } catch (error) {
+    console.error('Error searching students:', error);
+    throw error;
+  }
+}
 
 export const getStudentsByGrade = async (grade: string, selectedClass?: string): Promise<Student[]> => {
   const gradeQuery = query(
